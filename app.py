@@ -26,11 +26,8 @@ pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$'
 
 @app.route('/')
 def index():
-    return {
-
-            'message' : 'hello world'
-
-            }
+    pass
+   
 
 
 @app.route('/your/data/<token>', methods=['GET'])
@@ -38,12 +35,10 @@ def get_data(token):
     user = User.query.filter_by(token=token).first()
     if token:
         return {
-
                 "success": 200,
                 "name": user.name,
                 "email":user.email,
                 "token":user.token
-
                 }
 
     else:
@@ -76,6 +71,38 @@ def register():
                  "message": "your email is not valid"
             }
 
+
+@app.route('/get_rates/<token>')
+def get_rates(token):
+    pass
+
+
+
+@app.route('/blogs/<token>')
+def predictions(token):
+    pass
+
+
+@app.route('/update/profile/<token>', methods=['POST'])
+def edit_profile(token):
+    user = User.query.filter_by(token=token).first()
+    data = request.get_json()
+    if user:
+        name = data.name
+        email = data.email
+        if re.fullmatch(pattern, email):
+            user.name = name
+            user.email = email
+            db.session.commit()
+        
+        else:
+            return {
+                    "messsage": "invalid email address, enter the correct email format"
+                    }
+    else:
+        return {
+                "message": "token entered does not exist"
+                }
 
 if __name__ == '__main__':
     app.run(debug=True)
