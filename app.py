@@ -70,22 +70,29 @@ def register():
     data = request.get_json()
     name = data['name']
     email = data['email']
-    if re.fullmatch(pattern, email):
-        newemail = email
-        password = data['password']
-        token = secrets.token_hex(12)
-        details = User(name=name, email=newemail, password=generate_password_hash(password=password, method='sha256'), token=token)
-        db.session.add(details)
-        db.session.commit()
+    user = User.query.filter_by(email=email).first()
+    if user:
         return {
-                "message": "account created for {0}".format(name),
-                "status": 200,
-                "token": token
-              }
+                "message": "the email entered already exists choose a different one",
+                "suggestion": "get token by including your email/password in the url"
+                }
     else:
-        return {
-                 "message": "your email is not valid"
-            }
+        if re.fullmatch(pattern, email):
+            newemail = email
+            password = data['password']
+            token = secrets.token_hex(12)
+            details = User(name=name, email=newemail, password=generate_password_hash(password=password, method='sha256'), token=token)
+            db.session.add(details)
+            db.session.commit()
+            return {
+                    "message": "account created for {0}".format(name),
+                    "status": 200,
+                    "token": token
+                    }
+        else:
+            return {
+                    "message": "your email is not valid"
+                    }
 
 
 @app.route('/get_rates/<token>')
