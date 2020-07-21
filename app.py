@@ -33,7 +33,14 @@ class User(db.Model):
     email = db.Column(db.String(200), nullable=False)
     token = db.Column(db.String(200), nullable=False)
     password = db.Column(db.String(120), nullable=False)
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
 pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$'
@@ -41,14 +48,73 @@ pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$'
 
 @app.route('/')
 def index():
-    pass
-   
+    post = Post.query.filter_by().all()
+    if post:
+        for posts in post:
+            title = posts.title
+            body = posts.body
+            author = posts.author.name,
+            email = posts.author.email
+            id = posts.id
+        return {
+                "id":id,
+                "title": title,
+                "body": body,
+                "author email":email,
+                "author name": author
+                }
+    return {
+            "message": "no posts yet"
+            }
+
+
+@app.route('/update/post/<int:id>/<token>', methods=['GET', 'POST'])
+def update_post(id, token):
+    post = Post.query.get_or_404(id)
+    user = User.query.filter_by(token=token).first_or_404()
+    if request.method == 'GET':
+        return {
+                "title": post.title,
+                "body": post.body
+                }
+    else:
+        if post and post.author.email == user.email:
+            data = request.get_json()
+            title = data['title']
+            body = data['body']
+            post.title = title
+            post.body = body
+            db.session.commit()
+            return {
+                    "message":"post successfully update"
+                    }
+        else:
+            return {
+                    "message":"post does not exist or you are unauthorized from editing the post"
+                    }
+
+
+@app.route('/delete/post/<int:id>/<token>', methods=['POST'])
+def delete_post(id, token):
+    post = Post.query.get_or_404(id)
+    user = User.query.filter_by(token=token).first()
+    if post and post.author.email == user.email:
+        db.session.delete(post)
+        db.session.commit()
+        return {
+                "message": "post deleted successully"
+                }
+
+    else:
+        return {
+                "message":"forbidden"
+                }
 
 
 @app.route('/your/data/<token>', methods=['GET'])
 def get_data(token):
     user = User.query.filter_by(token=token).first()
-    if token:
+    if user:
         return {
                 "success": 200,
                 "name": user.name,
@@ -59,9 +125,7 @@ def get_data(token):
 
     else:
         return {
-
                 "message": "invalid token"
-
                 }
     
 
@@ -130,6 +194,7 @@ def edit_profile(token):
                 "message": "token entered does not exist"
                 }
 
+
 @app.route('/get_token/<email>/<password>', methods=['POST'])
 def get_token(email, password):
     if re.fullmatch(pattern, email):
@@ -153,6 +218,25 @@ def get_token(email, password):
                 "message": "invalid email format",
                 "suggestion":"enter correct format e.g <yourname>@<xyz>.<xyz>"
                 }
+
+
+@app.route('/add_post/<token>', methods=['POST'])
+def addpost(token):
+    data = request.get_json()
+    user = User.query.filter_by(token=token).first_or_404()
+    if user:
+        title = data['title']
+        body = data['body']
+        user_id = user.id
+        item = Post(title=title, body=body, user_id=user_id)
+        db.session.add(item)
+        db.session.commit()
+        return {
+                "message":"post added"
+                }
+    return {
+            "message":"invalid token"
+            }
 
 
 if __name__ == '__main__':
