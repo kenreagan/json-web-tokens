@@ -3,6 +3,6 @@ __pycache__/
 
 # virtual environment
 
-jsont/
+app/
 
 *.sqlite
