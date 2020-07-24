@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
@@ -34,14 +34,20 @@ class User(db.Model):
     token = db.Column(db.String(200), nullable=False)
     password = db.Column(db.String(120), nullable=False)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
-
-
+    
+    
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
+    def to_dict(self):
+        return {
+                 "id": self.id,
+                 "title": self.title,
+                 "body": self.body
+                }
 
 pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$'
 
@@ -50,19 +56,19 @@ pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$'
 def index():
     post = Post.query.filter_by().all()
     if post:
+        data = []
+
         for posts in post:
-            title = posts.title
-            body = posts.body
-            author = posts.author.name,
-            email = posts.author.email
-            id = posts.id
-        return {
-                "id":id,
-                "title": title,
-                "body": body,
-                "author email":email,
-                "author name": author
-                }
+            json_d = {}
+            json_d['title'] = posts.title,
+            json_d['body'] = posts.body,
+            json_d['id'] = posts.id,
+            json_d['author'] = posts.author.name
+            data.append(json_d)
+
+        return jsonify({
+               "post": data
+            })
     return {
             "message": "no posts yet"
             }
@@ -240,6 +246,6 @@ def addpost(token):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8000)
 
 
